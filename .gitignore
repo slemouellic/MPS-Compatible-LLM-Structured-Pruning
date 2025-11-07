@@ -1,0 +1,5 @@
+Dockerfile.jupyter
+.ipynb_checkpoints
+notebooks/*
+model/*
+.Trash-0/

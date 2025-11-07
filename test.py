@@ -1,4 +1,4 @@
-"""Simple throughput benchmark for streaming generation on pruned vs. original models."""
+"""Quick throughput check for streaming generation on pruned vs. original models."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
-"""CLI utilities for structured MLP pruning on Hugging Face causal LLMs.
+"""Structured MLP pruning for Hugging Face causal LLMs.
 
-This script keeps the original pruning workflow while improving project hygiene.
+The CLI sticks to the original weekend workflow, just wrapped in a cleaner shell.
 """
 
 from __future__ import annotations

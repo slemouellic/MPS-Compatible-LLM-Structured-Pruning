@@ -1,58 +1,51 @@
 # MPS-Compatible LLM Structured Pruning
 
-Structured pruning utilities for the MLP blocks of Hugging Face causal language models. The
-default settings prune `google/gemma-2-2b` directly on CPU so the workflow remains compatible with
-Apple Silicon machines using the MPS backend.
+This repo bundles a small weekend experiment: pruning the MLP blocks of Hugging Face causal language
+models while staying friendly to Apple Silicon (CPU or MPS). By default it trims `google/gemma-2-2b`
+and keeps the whole pipeline runnable on a laptop.
 
 ## Quickstart
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+1. Build the image:
 
-# Make sure your Hugging Face token is available
-export HF_TOKEN="<your_hf_token>"
+   ```bash
+   docker build -t llm-pruner .
+   ```
 
-python pruner.py --output-dir gemma2-pruned-70pct
-```
+2. Run the pruning script (make sure your Hugging Face token is available locally):
 
-The command above reproduces the original weekend project: it loads the model, collects activation
-statistics over three French calibration sentences, keeps 70 % of the neurons in every MLP block, and
-saves the pruned weights, tokenizer, and config under `gemma2-pruned-70pct/`.
+   ```bash
+   docker run --rm \
+     -e HF_TOKEN="$HF_TOKEN" \
+     -v "$PWD/output:/workspace/output" \
+     llm-pruner \
+     python pruner.py --output-dir /workspace/output/gemma2-pruned-70pct
+   ```
+
+That mirrors what I used during the weekend: the script loads the model, gathers a few activations on
+three short French sentences, keeps 70 % of the neurons in each MLP block, then exports the pruned
+weights, tokenizer and config to `output/gemma2-pruned-70pct/` on the host.
 
 ## CLI options
 
-- `--model-id`: Model repository to prune. Default: `google/gemma-2-2b`.
-- `--keep-ratio`: Fraction of neurons to keep per layer. Must be between 0 and 1. Default: `0.7`.
-- `--max-layers`: Limit the number of transformer layers to prune. Omit for all layers.
-- `--calibration-file`: Text file containing one calibration prompt per line.
-- `--calibration-text`: Specify calibration prompts inline (can be repeated).
-- `--output-dir`: Target directory for the pruned artifacts. Default: `gemma2-pruned-70pct`.
-- `--config-path`: Optional secondary config to update (defaults to `gemma2-pruned-50pct/config.json`).
-- `--intermediate-size` / `--hidden-size`: Values written to the config above.
-- `--hf-token`: Pass a Hugging Face token explicitly (falls back to the `HF_TOKEN` env var).
-- `--verbose`: Enable debug logging.
+- `--model-id`: model repo to prune (default `google/gemma-2-2b`).
+- `--keep-ratio`: fraction of neurons kept per layer (default `0.7`).
+- `--max-layers`: stop pruning after N transformer layers.
+- `--calibration-file`: text file with one prompt per line.
+- `--calibration-text`: extra prompts inline; can be repeated.
+- `--output-dir`: where the pruned model/tokenizer land (default `gemma2-pruned-70pct`).
+- `--config-path`: optional config to tweak in-place (default `gemma2-pruned-50pct/config.json`).
+- `--intermediate-size` / `--hidden-size`: numbers written to that config.
+- `--hf-token`: Hugging Face token; otherwise the script reads `HF_TOKEN` from the environment.
+- `--verbose`: chatty logging.
 
 Run `python pruner.py --help` to see the full list.
 
-## Docker usage
+## Hugging Face token
 
-Build an image with all dependencies and a cached model download:
-
-```bash
-docker build -t llm-pruner .
-```
-
-Prune inside a container (share your HF token via env var and mount an output directory):
-
-```bash
-docker run --rm \
-  -e HF_TOKEN="$HF_TOKEN" \
-  -v "$PWD/output:/workspace/output" \
-  llm-pruner \
-  python pruner.py --output-dir /workspace/output/gemma2-pruned-70pct
-```
+The scripts read your Hugging Face token from the `HF_TOKEN` environment variable. When running in
+Docker, pass it with `-e HF_TOKEN="$HF_TOKEN"` (or specify another secure secret source). Inside the
+container the token is available for the entire process session.
 
 ## Development tips
 
@@ -62,6 +55,5 @@ docker run --rm \
 
 ## License
 
-This repository is shared for experimentation. Adapt licenses to match the upstream model terms
-before distributing pruned weights.
-
+It’s an experiment, not a product. Double-check the license of any upstream model before sharing the
+derived weights.
